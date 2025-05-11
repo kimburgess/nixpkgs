@@ -66,7 +66,7 @@ let
     ))
   );
 
-  buildGrammar = callPackage ./grammar.nix { };
+  buildGrammar = callPackage ./build-grammar.nix { };
 
   builtGrammars =
     let
