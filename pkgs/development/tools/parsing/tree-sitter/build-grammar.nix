@@ -29,7 +29,7 @@ let
   */
   grammar = lib.findFirst (lib.matchAttrs {
     name = language;
-  }) (throw "no grammar defined for ${language} in source") package.grammars;
+  }) (throw "no grammar defined for '${language}' in ${src}/tree-sitter.json") package.grammars;
 
   /**
     A relative path from the directory containing tree-sitter.json to another
