@@ -5,23 +5,45 @@
   lib,
 }:
 
-# Build a parser grammar and put the resulting shared object in `$out/parser`
-
 {
-  # language name
   language,
-  version,
   src,
-  location ? null,
   generate ? false,
   ...
 }@args:
 
+let
+  /**
+    Tree-sitter grammar packages contain a `tree-sitter.json` file at their
+    root. This provides package metadata that can be used here.
+
+    See https://tree-sitter.github.io/tree-sitter/cli/init.html for spec.
+  */
+  package = lib.importJSON "${src}/tree-sitter.json";
+
+  /**
+    The grammar metadata.
+
+    Each package may contain one or more grammars. `language` must match one of
+    these and is used for further discovery.
+  */
+  grammar = lib.findFirst (lib.matchAttrs {
+    name = language;
+  }) (throw "no grammar defined for ${language} in source") package.grammars;
+
+  /**
+    A relative path from the directory containing tree-sitter.json to another
+    directory containing the src/ folder, which contains the actual generated
+    parser.
+  */
+  location = grammar.path or ".";
+in
 stdenv.mkDerivation (
   {
-    pname = "${language}-grammar";
+    pname = "tree-sitter-${language}";
+    version = package.metadata.version;
 
-    inherit src version;
+    inherit src;
 
     nativeBuildInputs = lib.optionals generate [
       nodejs
@@ -40,7 +62,7 @@ stdenv.mkDerivation (
     stripDebugList = [ "parser" ];
 
     configurePhase =
-      lib.optionalString (location != null) ''
+      lib.optionalString (location != ".") ''
         cd ${location}
       ''
       + lib.optionalString generate ''
@@ -74,7 +96,6 @@ stdenv.mkDerivation (
   }
   // removeAttrs args [
     "language"
-    "location"
     "generate"
   ]
 )
