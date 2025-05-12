@@ -54,7 +54,11 @@ let
         { language, ... }@attrs:
         {
           name = "tree-sitter-${language}";
-          value = attrs;
+          value = lib.recursiveUpdate {
+            passthru = {
+              updateScript = nix-update-script { };
+            };
+          } attrs;
         }
       ))
       lib.listToAttrs
