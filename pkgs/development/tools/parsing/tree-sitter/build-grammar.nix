@@ -19,7 +19,19 @@ let
 
     See https://tree-sitter.github.io/tree-sitter/cli/init.html for spec.
   */
-  package = lib.importJSON "${src}/tree-sitter.json";
+  package =
+    let
+      path = "${src}/tree-sitter.json";
+    in
+    if lib.pathExists path then
+      lib.importJSON path
+    else
+      # Older grammars may not contain this file. The tree-sitter CLI provides
+      # a warning rather than hard fail unless ABI > 14, mirror that behaviour.
+      lib.warn "tree-sitter-${language} source is missing tree-sitter.json file, using defaults" {
+        grammars = [ { name = language; } ];
+        metadata.version = "0.0.0";
+      };
 
   /**
     The grammar metadata.

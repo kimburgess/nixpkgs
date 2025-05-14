@@ -4,6 +4,15 @@
 
 [
   {
+    language = "bash";
+    src = fetchFromGitHub {
+      owner = "tree-sitter";
+      repo = "tree-sitter-bash";
+      rev = "487734f87fd87118028a65a4599352fa99c9cde8";
+      hash = "sha256-7N1PLVMJxwN5FzHW9NbXZTzGhvziwLCC8tDO3qdjtOo=";
+    };
+  }
+  {
     language = "netlinx";
     src = fetchFromGitHub {
       owner = "Norgate-AV";
