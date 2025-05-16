@@ -42,9 +42,27 @@ let
     Attrset of grammar sources.
 
     Each entry will be used as an input to `buildGrammar`. At a minimum this
-    must be `{ language, src }`. Additional attributes may be included to
+    must be `{ language, version, src }`. Additional attributes may be included to
     override defaults as required.
   */
+  grammars' =
+    let
+      grammars = callPackage ./grammars.nix { };
+    in
+    lib.mapAttrs (
+      n: v:
+      {
+        passthru.updateScript = nix-update-script { };
+      }
+      // v
+    ) grammars;
+  #   name:
+  #   lib.recursiveUpdate {
+  #     language = lib.strings.removePrefix "tree-sitter-" name;
+  #     passthru.updateScript = nix-update-script { };
+  #   }
+  # ) grammars;
+
   grammars =
     let
       srcs = callPackage ./grammars.nix { };
@@ -54,15 +72,36 @@ let
         { language, ... }@attrs:
         {
           name = "tree-sitter-${language}";
-          value = lib.recursiveUpdate {
-            passthru = {
-              updateScript = nix-update-script { };
-            };
-          } attrs;
+          value = {
+            passthru.updateScript = nix-update-script { };
+          } // attrs;
         }
       ))
       lib.listToAttrs
     ];
+
+  # grammars =
+  #   let
+  #     srcs = callPackage ./grammars.nix { };
+  #   in
+  #   lib.pipe srcs [
+  #     (map (
+  #       { language, ... }@attrs:
+  #       {
+  #         name = "tree-sitter-${language}";
+  #         value = lib.recursiveUpdate {
+  #           passthru = {
+  #             updateScript = nix-update-script {
+  #               extraArgs = [
+  #                 "--override-filename pkgs/development/tools/parsing/tree-sitter/grammars.nix"
+  #               ];
+  #             };
+  #           };
+  #         } attrs;
+  #       }
+  #     ))
+  #     lib.listToAttrs
+  #   ];
 
   /**
     Attrset of compiled grammars.
