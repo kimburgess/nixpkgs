@@ -2,27 +2,27 @@
   fetchFromGitHub,
 }:
 
-# [
-#   {
-#     language = "netlinx";
-#     version = "1.0.3";
-#     repo = "gh:norgate-av/tree-sitter-netlinx";
-#     hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
-#   }
-# ]
-
 [
-  rec {
+  {
     language = "netlinx";
     version = "1.0.3";
-    src = fetchFromGitHub {
-      owner = "Norgate-AV";
-      repo = "tree-sitter-netlinx";
-      rev = "v${version}";
-      hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
-    };
+    repo = "Norgate-AV/tree-sitter-netlinx";
+    hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
   }
 ]
+
+# [
+#   rec {
+#     language = "netlinx";
+#     version = "1.0.3";
+#     src = fetchFromGitHub {
+#       owner = "Norgate-AV";
+#       repo = "tree-sitter-netlinx";
+#       rev = "v${version}";
+#       hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
+#     };
+#   }
+# ]
 
 # TODO: check if details above can be condensed
 # this requires "src" and "version" attrs to remain accurate for line num

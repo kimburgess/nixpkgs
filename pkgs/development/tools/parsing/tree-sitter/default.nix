@@ -42,21 +42,39 @@ let
     Attrset of grammar sources.
 
     Each entry will be used as an input to `buildGrammar`. At a minimum this
-    must be `{ language, version, src }`. Additional attributes may be included to
-    override defaults as required.
+    must be `{ language, version, src }` or `{ language, version, repo, hash }`.
+    Additional attributes may be included to override defaults as required.
   */
   grammars =
     let
-      srcs = callPackage ./grammars.nix { };
+      grammars' = callPackage ./grammars.nix { };
+      updateScript = nix-update-script {
+        extraArgs = [
+          "--override-filename pkgs/development/tools/parsing/tree-sitter/grammars.nix"
+        ];
+      };
     in
-    lib.pipe srcs [
+    lib.pipe grammars' [
       (map (
-        { language, ... }@attrs:
+        { language, version, ... }@attrs:
         {
           name = "tree-sitter-${language}";
-          value = {
-            passthru.updateScript = nix-update-script { };
-          } // attrs;
+          value =
+            {
+              passthru = { inherit updateScript; };
+            }
+            // lib.optionalAttrs (attrs ? repo && attrs ? hash) {
+              src = fetchFromGitHub {
+                owner = lib.head (lib.splitString "/" attrs.repo);
+                repo = lib.last (lib.splitString "/" attrs.repo);
+                rev = "v${version}";
+                hash = attrs.hash;
+              };
+            }
+            // removeAttrs attrs [
+              "repo"
+              "hash"
+            ];
         }
       ))
       lib.listToAttrs
