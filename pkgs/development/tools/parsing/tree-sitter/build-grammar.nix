@@ -14,8 +14,6 @@
 }@args:
 
 let
-  pname = "tree-sitter-${language}";
-
   /**
     Tree-sitter grammar packages contain a `tree-sitter.json` file at their
     root. This provides package metadata that can be used here.
@@ -31,19 +29,10 @@ let
     else
       # Older grammars may not contain this file. The tree-sitter CLI provides
       # a warning rather than hard fail unless ABI > 14, mirror that behaviour.
-      lib.warn "${pname} is missing tree-sitter.json in source root" {
+      lib.warn "${language} grammar is missing tree-sitter.json in source root" {
         grammars = [ { name = language; } ];
         metadata = { inherit version; };
       };
-
-  /**
-    Always use the specified version for the nix meta attribute, but warn if
-    there's a mismatch with the tree-sitter package metadata in source.
-  */
-  version =
-    lib.warnIf (package.metadata.version != version)
-      "${pname} version (${version}) differs from version in source (${package.metadata.version})"
-      version;
 
   /**
     The grammar metadata.
@@ -64,11 +53,9 @@ let
 in
 stdenv.mkDerivation (
   {
-    inherit
-      pname
-      version
-      src
-      ;
+    pname = "tree-sitter-${language}";
+
+    inherit src;
 
     nativeBuildInputs = lib.optionals generate [
       nodejs
