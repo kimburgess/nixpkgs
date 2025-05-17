@@ -29,7 +29,11 @@ let
     ];
   };
 
-  # FIXME: switch to builtins.parseFlakeRef when stable
+  /**
+    Parse a flakeref style string to { type, owner, repo }
+
+    FIXME: switch to builtins.parseFlakeRef when stable
+  */
   parseUrl =
     url:
     let
