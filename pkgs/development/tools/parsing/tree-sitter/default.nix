@@ -42,63 +42,7 @@ let
   /**
     Attrset of grammar sources.
   */
-  grammars =
-    let
-      grammars' = callPackage ./grammars.nix { };
-      updateScript = nix-update-script {
-        extraArgs = [
-          "--override-filename pkgs/development/tools/parsing/tree-sitter/grammars.nix"
-        ];
-      };
-      # FIXME: switch to builtins.parseFlakeRef when stable
-      parseUrl =
-        url:
-        let
-          parts = lib.match "(.+):(.+)\/(.+)" url;
-        in
-        {
-          type = lib.elemAt parts 0;
-          owner = lib.elemAt parts 1;
-          repo = lib.elemAt parts 2;
-        };
-    in
-    lib.pipe grammars' [
-      (map (
-        { language, version, ... }@attrs:
-        {
-          name = "tree-sitter-${language}";
-          value =
-            # Insert auto-update support
-            {
-              passthru = { inherit updateScript; };
-            }
-            # Expand flakeref style shorthand into a source expression
-            // lib.optionalAttrs (attrs ? url && attrs ? hash) {
-              src =
-                let
-                  source = parseUrl attrs.url;
-                  fetch = lib.getAttr source.type {
-                    github = fetchFromGitHub;
-                    # NOTE: include other hosts here as required
-                  };
-                in
-                fetch {
-                  inherit (source)
-                    owner
-                    repo
-                    ;
-                  rev = "v${version}";
-                  inherit (attrs) hash;
-                };
-            }
-            // removeAttrs attrs [
-              "url"
-              "hash"
-            ];
-        }
-      ))
-      lib.listToAttrs
-    ];
+  grammars = callPackage ./grammars.nix { };
 
   /**
     Attrset of compiled grammars.

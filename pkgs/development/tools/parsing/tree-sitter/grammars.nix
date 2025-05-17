@@ -1,88 +1,87 @@
-{ }:
+{
+  lib,
+  fetchFromGitHub,
+  fetchFromGitLab,
+  fetchFromSourcehut,
+  nix-update-script,
+  callPackage,
+}:
 
-[
-  {
-    language = "netlinx";
-    version = "1.0.3";
-    url = "github:Norgate-AV/tree-sitter-netlinx";
-    hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
-  }
+let
+  /**
+    List of grammar sources. See ./grammar-sources.nix to define a new grammar.
+
+    Elements must be of the form
+      { language, version, src, ... }
+    or
+      { language, version, url, hash, ... }
+    with url being a flakeref style such as `github:tree-siter/tree-sitter-foo`
+    that will be used to derive a source expression.
+  */
+  grammar-sources = callPackage ./grammar-sources.nix { };
+
+  /**
+    Attribute to be inserted as the default grammar updater.
+  */
+  updateScript = nix-update-script {
+    extraArgs = [
+      "--override-filename pkgs/development/tools/parsing/tree-sitter/grammar-sources.nix"
+    ];
+  };
+
+  # FIXME: switch to builtins.parseFlakeRef when stable
+  parseUrl =
+    url:
+    let
+      parts = lib.match "(.+):(.+)\/(.+)" url;
+    in
+    {
+      type = lib.elemAt parts 0;
+      owner = lib.elemAt parts 1;
+      repo = lib.elemAt parts 2;
+    };
+
+in
+
+lib.pipe grammar-sources [
+  (map (
+    { language, version, ... }@attrs:
+    {
+      name = "tree-sitter-${language}";
+      value =
+
+        # Insert auto-update support
+        {
+          passthru = { inherit updateScript; };
+        }
+
+        # Expand flakeref style shorthand into a source expression
+        // lib.optionalAttrs (attrs ? url && attrs ? hash) {
+          src =
+            let
+              source = parseUrl attrs.url;
+              fetch = lib.getAttr source.type {
+                github = fetchFromGitHub;
+                gitlab = fetchFromGitLab;
+                sourcehut = fetchFromSourcehut;
+                # NOTE: include other hosts here as required
+              };
+            in
+            fetch {
+              inherit (source)
+                owner
+                repo
+                ;
+              rev = "v${version}";
+              inherit (attrs) hash;
+            };
+        }
+        // removeAttrs attrs [
+          "url"
+          "hash"
+        ];
+    }
+  ))
+
+  lib.listToAttrs
 ]
-
-# [
-#   rec {
-#     language = "netlinx";
-#     version = "1.0.3";
-#     src = fetchFromGitHub {
-#       owner = "Norgate-AV";
-#       repo = "tree-sitter-netlinx";
-#       rev = "v${version}";
-#       hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
-#     };
-#   }
-# ]
-
-# TODO: check if details above can be condensed
-# this requires "src" and "version" attrs to remain accurate for line num
-
-# {
-#   tree-sitter-netlinx = {
-#     language = "netlinx";
-#     version = "1.0.3";
-#     src = fetchFromGitHub {
-#       owner = "Norgate-AV";
-#       repo = "tree-sitter-netlinx";
-#       rev = "6d3c01e54d150c6d3dcf99cad95a1f5fa0293018";
-#       hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
-#     };
-#   };
-# }
-
-# [
-#   {
-#     language = "bash";
-#     src = fetchFromGitHub {
-#       owner = "tree-sitter";
-#       repo = "tree-sitter-bash";
-#       rev = "487734f87fd87118028a65a4599352fa99c9cde8";
-#       hash = "sha256-7N1PLVMJxwN5FzHW9NbXZTzGhvziwLCC8tDO3qdjtOo=";
-#     };
-#   }
-#   {
-#     language = "comment";
-#     src = fetchFromGitHub {
-#       owner = "stsewd";
-#       repo = "tree-sitter-comment";
-#       rev = "ef429992748f89e176243411e94b8ffc8777d118";
-#       hash = "sha256-XfHUHWenRjjQer9N4jhkFjNDlvz8ZI8Qep5eiWIyr7Q=";
-#     };
-#   }
-#   {
-#     language = "netlinx";
-#     version = "1.0.3";
-#     src = fetchFromGitHub {
-#       owner = "Norgate-AV";
-#       repo = "tree-sitter-netlinx";
-#       rev = "6d3c01e54d150c6d3dcf99cad95a1f5fa0293018";
-#       hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
-#     };
-#   }
-#   {
-#     language = "tsx";
-#     src = fetchFromGitHub {
-#       owner = "tree-sitter";
-#       repo = "tree-sitter-typescript";
-#       rev = "f975a621f4e7f532fe322e13c4f79495e0a7b2e7";
-#       hash = "sha256-CU55+YoFJb6zWbJnbd38B7iEGkhukSVpBN7sli6GkGY=";
-#     };
-#   }
-#   {
-#     language = "typescript";
-#     src = fetchFromGitHub {
-#       owner = "tree-sitter";
-#       repo = "tree-sitter-typescript";
-#       rev = "f975a621f4e7f532fe322e13c4f79495e0a7b2e7";
-#       hash = "sha256-CU55+YoFJb6zWbJnbd38B7iEGkhukSVpBN7sli6GkGY=";
-#     };
-#   }
-# ]
