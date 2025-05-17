@@ -1,12 +1,10 @@
-{
-  fetchFromGitHub,
-}:
+{ }:
 
 [
   {
     language = "netlinx";
     version = "1.0.3";
-    repo = "Norgate-AV/tree-sitter-netlinx";
+    url = "github:Norgate-AV/tree-sitter-netlinx";
     hash = "sha256-ZG3zeE/6FYb+D9WrTNocXjbNJr3re7ajmaanBlSgfo4=";
   }
 ]

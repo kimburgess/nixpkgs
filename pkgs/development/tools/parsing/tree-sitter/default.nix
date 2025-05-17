@@ -32,6 +32,7 @@ let
     ```nix
     tree-sitter-foo = buildGrammar {
       language = "foo";
+      version = "0.42.0";
       src = fetchFromGitHub { ... };
     };
     ```
@@ -40,10 +41,6 @@ let
 
   /**
     Attrset of grammar sources.
-
-    Each entry will be used as an input to `buildGrammar`. At a minimum this
-    must be `{ language, version, src }` or `{ language, version, repo, hash }`.
-    Additional attributes may be included to override defaults as required.
   */
   grammars =
     let
@@ -53,6 +50,17 @@ let
           "--override-filename pkgs/development/tools/parsing/tree-sitter/grammars.nix"
         ];
       };
+      # FIXME: switch to builtins.parseFlakeRef when stable
+      parseUrl =
+        url:
+        let
+          parts = lib.match "(.+):(.+)\/(.+)" url;
+        in
+        {
+          type = lib.elemAt parts 0;
+          owner = lib.elemAt parts 1;
+          repo = lib.elemAt parts 2;
+        };
     in
     lib.pipe grammars' [
       (map (
@@ -60,19 +68,31 @@ let
         {
           name = "tree-sitter-${language}";
           value =
+            # Insert auto-update support
             {
               passthru = { inherit updateScript; };
             }
-            // lib.optionalAttrs (attrs ? repo && attrs ? hash) {
-              src = fetchFromGitHub {
-                owner = lib.head (lib.splitString "/" attrs.repo);
-                repo = lib.last (lib.splitString "/" attrs.repo);
-                rev = "v${version}";
-                hash = attrs.hash;
-              };
+            # Expand flakeref style shorthand into a source expression
+            // lib.optionalAttrs (attrs ? url && attrs ? hash) {
+              src =
+                let
+                  source = parseUrl attrs.url;
+                  fetch = lib.getAttr source.type {
+                    github = fetchFromGitHub;
+                    # NOTE: include other hosts here as required
+                  };
+                in
+                fetch {
+                  inherit (source)
+                    owner
+                    repo
+                    ;
+                  rev = "v${version}";
+                  inherit (attrs) hash;
+                };
             }
             // removeAttrs attrs [
-              "repo"
+              "url"
               "hash"
             ];
         }
