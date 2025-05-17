@@ -17,7 +17,6 @@
   enableShared ? !stdenv.hostPlatform.isStatic,
   enableStatic ? stdenv.hostPlatform.isStatic,
   webUISupport ? false,
-  extraGrammars ? { },
 
   # tests
   lunarvim,
@@ -47,7 +46,7 @@ let
   /**
     Attrset of compiled grammars.
   */
-  builtGrammars = lib.mapAttrs (_: buildGrammar) (grammars // extraGrammars);
+  builtGrammars = lib.mapAttrs (_: buildGrammar) grammars;
 
   # Usage:
   # pkgs.tree-sitter.withPlugins (p: [ p.tree-sitter-c p.tree-sitter-java ... ])
